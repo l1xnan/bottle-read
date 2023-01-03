@@ -87,51 +87,35 @@ py = sys.version_info
 py3k = py.major > 2
 
 # Lots of stdlib and builtin differences.
-if py3k:
-    import http.client as httplib
-    import _thread as thread
-    from urllib.parse import urljoin, SplitResult as UrlSplitResult
-    from urllib.parse import urlencode, quote as urlquote, unquote as urlunquote
-    urlunquote = functools.partial(urlunquote, encoding='latin1')
-    from http.cookies import SimpleCookie, Morsel, CookieError
-    from collections.abc import MutableMapping as DictMixin
-    from types import ModuleType as new_module
-    import pickle
-    from io import BytesIO
-    import configparser
-    # getfullargspec was deprecated in 3.5 and un-deprecated in 3.6
-    # getargspec was deprecated in 3.0 and removed in 3.11
-    from inspect import getfullargspec
-    def getargspec(func):
-        spec = getfullargspec(func)
-        kwargs = makelist(spec[0]) + makelist(spec.kwonlyargs)
-        return kwargs, spec[1], spec[2], spec[3]
 
-    basestring = str
-    unicode = str
-    json_loads = lambda s: json_lds(touni(s))
-    callable = lambda x: hasattr(x, '__call__')
-    imap = map
+import http.client as httplib
+import _thread as thread
+from urllib.parse import urljoin, SplitResult as UrlSplitResult
+from urllib.parse import urlencode, quote as urlquote, unquote as urlunquote
+urlunquote = functools.partial(urlunquote, encoding='latin1')
+from http.cookies import SimpleCookie, Morsel, CookieError
+from collections.abc import MutableMapping as DictMixin
+from types import ModuleType as new_module
+import pickle
+from io import BytesIO
+import configparser
+# getfullargspec was deprecated in 3.5 and un-deprecated in 3.6
+# getargspec was deprecated in 3.0 and removed in 3.11
+from inspect import getfullargspec
+def getargspec(func):
+    spec = getfullargspec(func)
+    kwargs = makelist(spec[0]) + makelist(spec.kwonlyargs)
+    return kwargs, spec[1], spec[2], spec[3]
 
-    def _raise(*a):
-        raise a[0](a[1]).with_traceback(a[2])
-else:  # 2.x
-    import httplib
-    import thread
-    from urlparse import urljoin, SplitResult as UrlSplitResult
-    from urllib import urlencode, quote as urlquote, unquote as urlunquote
-    from Cookie import SimpleCookie, Morsel, CookieError
-    from itertools import imap
-    import cPickle as pickle
-    from imp import new_module
-    from StringIO import StringIO as BytesIO
-    import ConfigParser as configparser
-    from collections import MutableMapping as DictMixin
-    from inspect import getargspec
+basestring = str
+unicode = str
+json_loads = lambda s: json_lds(touni(s))
+callable = lambda x: hasattr(x, '__call__')
+imap = map
 
-    unicode = unicode
-    json_loads = json_lds
-    exec(compile('def _raise(*a): raise a[0], a[1], a[2]', '<py3fix>', 'exec'))
+def _raise(*a):
+    raise a[0](a[1]).with_traceback(a[2])
+
 
 # Some helpers for string/byte handling
 def tob(s, enc='utf8'):
@@ -2107,44 +2091,20 @@ class MultiDict(DictMixin):
     def keys(self):
         return self.dict.keys()
 
-    if py3k:
+    def values(self):
+        return (v[-1] for v in self.dict.values())
 
-        def values(self):
-            return (v[-1] for v in self.dict.values())
+    def items(self):
+        return ((k, v[-1]) for k, v in self.dict.items())
 
-        def items(self):
-            return ((k, v[-1]) for k, v in self.dict.items())
+    def allitems(self):
+        return ((k, v) for k, vl in self.dict.items() for v in vl)
 
-        def allitems(self):
-            return ((k, v) for k, vl in self.dict.items() for v in vl)
+    iterkeys = keys
+    itervalues = values
+    iteritems = items
+    iterallitems = allitems
 
-        iterkeys = keys
-        itervalues = values
-        iteritems = items
-        iterallitems = allitems
-
-    else:
-
-        def values(self):
-            return [v[-1] for v in self.dict.values()]
-
-        def items(self):
-            return [(k, v[-1]) for k, v in self.dict.items()]
-
-        def iterkeys(self):
-            return self.dict.iterkeys()
-
-        def itervalues(self):
-            return (v[-1] for v in self.dict.itervalues())
-
-        def iteritems(self):
-            return ((k, v[-1]) for k, v in self.dict.iteritems())
-
-        def iterallitems(self):
-            return ((k, v) for k, vl in self.dict.iteritems() for v in vl)
-
-        def allitems(self):
-            return [(k, v) for k, vl in self.dict.iteritems() for v in vl]
 
     def get(self, key, default=None, index=-1, type=None):
         """ Return the most recent value for a key.
